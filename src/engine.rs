@@ -9,11 +9,6 @@ const GAMMA: f64 = 7.0;
 const LO_0: f64 = 1.0;
 const B: f64 = 1.0;
 
-fn density2pressure(density: f64) -> f64 {
-    // B * ((density / LO_0).powf(GAMMA) - 1.0)
-    100.0 * (density - 200.0)
-}
-
 pub struct SPH {
     pub particles: Vec<Particle>,
     kernel: Poly6,
@@ -23,13 +18,14 @@ pub struct SPH {
     size: usize,
     block: Vec<Vec<usize>>,
     eta: f64,
+    density0: f64,
+    pressure_base: f64,
 }
 
 impl SPH {
-    pub fn new(r: f64, h: f64) -> SPH {
+    pub fn new(r: f64, h: f64, density0: f64, pressure_base: f64) -> SPH {
         let size = ((W / r) as usize) * ((H / r) as usize);
         let mut v = Vec::<Particle>::with_capacity(size);
-        // let mut v = vec![];
         let z = Vector2::new(0.0, 0.0);
         for i in 4..(W / r / 2.0 - 4.0) as i32 {
             for j in 4..(H / r - 4.0) as i32 {
@@ -125,6 +121,8 @@ impl SPH {
             size: bw * bh,
             block: vec![vec![]; bw * bh],
             eta: 0.01 * h * h,
+            density0,
+            pressure_base,
         }
     }
 
@@ -184,12 +182,18 @@ impl SPH {
                 }
             }
             // util::console_log(format!("density: {}/{}", i, len).as_str());
+            let pressure = self.density2pressure(&a);
             let mut p = &mut self.particles[i];
             p.density = a;
-            p.pressure = density2pressure(a);
+            p.pressure = pressure;
             // util::console_log(format!("density: {}", i).as_str());
         }
         // util::console_log("density: fin");
+    }
+
+    fn density2pressure(&self, density: &f64) -> f64 {
+        // B * ((density / LO_0).powf(GAMMA) - 1.0)
+        self.pressure_base * (density - self.density0)
     }
 
     fn calc_power(&mut self) {
@@ -278,7 +282,7 @@ impl SPH {
 
 #[test]
 fn test() {
-    let mut sph = SPH::new(1.0, 1.5);
+    let mut sph = SPH::new(1.0, 1.5, 200.0, 100.0);
     for _i in 0..10 {
         sph.step(0.01);
     }

@@ -21,16 +21,16 @@ pub fn main_js() -> Result<(), JsValue> {
     // console_error_panic_hook::set_once();
 
     // Your code goes here!
-    console::log_1(&JsValue::from_str("Hello world!"));
-    init();
-    console::log_1(&JsValue::from_str("initialized"));
+    // console::log_1(&JsValue::from_str("Hello world!"));
+    // init();
+    // console::log_1(&JsValue::from_str("initialized"));
     Ok(())
 }
 
 #[wasm_bindgen]
-pub fn init() {
+pub fn init(r: f64, h: f64, density0: f64, pressure_base: f64) {
     unsafe {
-        engine = Some(Box::new(SPH::new(1.0, 1.5)));
+        engine = Some(Box::new(SPH::new(r, h, density0, pressure_base)));
     }
     let document = web_sys::window().unwrap().document().unwrap();
     let canvas = document.get_element_by_id("canvas").unwrap();
@@ -67,8 +67,7 @@ pub fn draw(ax: f64, ay: f64, az: f64, t: f64) {
         .unwrap();
 
     util::console_log("stepping");
-    let mut s = msph();
-    s.step(t);
+    msph().step(t);
     let s = sph();
     util::console_log("steped");
 
